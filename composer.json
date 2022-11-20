@@ -1,0 +1,22 @@
+{
+    "name": "mggflow/data-dealer",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "MGGFLOW\\DataDealer\\": "src/"
+        }
+    },
+    "authors": [
+        {},
+        {
+            "name": "Pavel Eliseev",
+            "email": "deusagnis@gmail.com",
+            "homepage": "https://mggflow.in",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+
+    }
+}
