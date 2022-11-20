@@ -8,7 +8,12 @@
         }
     },
     "authors": [
-        {},
+        {
+            "name": "Nikita Kukin",
+            "email": "workkukin@gmail.com",
+            "homepage": "https://github.com/oxeekezy",
+            "role": "Developer"
+        },
         {
             "name": "Pavel Eliseev",
             "email": "deusagnis@gmail.com",
