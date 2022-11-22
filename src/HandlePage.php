@@ -2,6 +2,7 @@
 
 namespace MGGFLOW\DataDealer;
 
+use MGGFLOW\DataDealer\Entities\Regular;
 use MGGFLOW\DataDealer\Exceptions\RegularsNotFound;
 use MGGFLOW\DataDealer\Interfaces\PageHandler;
 use MGGFLOW\DataDealer\Interfaces\ParserHandler;
@@ -17,6 +18,7 @@ class HandlePage implements PageHandler
     private array $uniqueRegulars;
 
     private string $url;
+    private int $originId;
 
 
     public function __construct(ParserHandler $parserHandler, RegularsData $regularsData)
@@ -27,13 +29,10 @@ class HandlePage implements PageHandler
 
     public function handle(object $origin, object $page): array
     {
-        $this->url = $page->url; //!!!!!
-        // find origin regulars
-        $this->getOriginRegulars($origin->id);
+        $this->setParsingOptions($origin, $page);
+        $this->getOriginRegulars();
         $this->checkRegularsExistence();
-        // unique   regulars hash table [hash => expression]
         $this->makeRegularsUnique();
-        //парсим
         $this->parse();
 
         //результаты разделяем на ссылки и целевые вхождения
@@ -46,9 +45,15 @@ class HandlePage implements PageHandler
         return ['THIS IS DEBUG FIX IT IN RETURN'];
     }
 
+    private function setParsingOptions(object $origin, object $page)
+    {
+        $this->originId = $origin->id;
+        $this->url = $page->url;
+    }
+
     private function getOriginRegulars(int $originId)
     {
-        $this->originRegulars = $this->regularsData->findOriginRegulars($originId);
+        $this->originRegulars = $this->regularsData->findOriginRegulars($this->originId);
     }
 
     private function checkRegularsExistence()
@@ -62,14 +67,17 @@ class HandlePage implements PageHandler
     {
         foreach ($this->originRegulars as $regex)
         {
-            $this->uniqueRegulars[md5($regex)] = $regex;
+            $this->uniqueRegulars[$regex->expression_hash] = $regex->expression;
         }
+
+        $this->uniqueRegulars[md5(Regular::URL_REGEX)] = Regular::URL_REGEX;
     }
 
     private function parse()
     {
         $this->parseResult = $this->parserHandler->parse($this->url, $this->uniqueRegulars);
     }
-
-
 }
+
+
+

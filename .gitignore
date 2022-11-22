@@ -3,3 +3,6 @@
 
 # Ignore packages directory
 vendor
+
+# Ignore templates
+temp.php
