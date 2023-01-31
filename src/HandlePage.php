@@ -6,6 +6,8 @@ use MGGFLOW\DataDealer\Entities\Match;
 use MGGFLOW\DataDealer\Entities\Page;
 use MGGFLOW\DataDealer\Entities\Regular;
 use MGGFLOW\DataDealer\Exceptions\RegularsNotFound;
+use MGGFLOW\DataDealer\Interfaces\MatchData;
+use MGGFLOW\DataDealer\Interfaces\PageData;
 use MGGFLOW\DataDealer\Interfaces\PageHandler;
 use MGGFLOW\DataDealer\Interfaces\ParserHandler;
 use MGGFLOW\DataDealer\Interfaces\RegularsData;
@@ -14,6 +16,8 @@ class HandlePage implements PageHandler
 {
     private ParserHandler $parserHandler;
     private RegularsData $regularsData;
+    private MatchData $matchData;
+    private PageData $pageData;
 
     private object $origin;
     private string $pageUrl;
@@ -31,44 +35,44 @@ class HandlePage implements PageHandler
     protected array $regularMatches;
 
     protected array $matchesToAdd;
-    protected array $pagesUrls;
+    protected array $pagesToAdd;
+
+    protected ?array $matchesSavingResult;
+    protected ?array $pagesSavingResult;
 
 
-    public function __construct(ParserHandler $parserHandler, RegularsData $regularsData)
+    public function __construct(ParserHandler $parserHandler, RegularsData $regularsData, MatchData $matchData, PageData $pageData)
     {
         $this->parserHandler = $parserHandler;
         $this->regularsData = $regularsData;
+        $this->matchData = $matchData;
+        $this->pageData = $pageData;
     }
 
     public function handle(object $origin, object $page): array
     {
-        $this->setFields($origin, $page);
+        $this->initFields($origin, $page);
         $this->getOriginRegulars();
         $this->checkRegularsExistence();
         $this->genUrlsExpressionHash();
-        $this->makeRegularsUnique(); //Сделать отдельный класс для хеширования
+        $this->makeRegularsUnique();
         $this->parse();
         $this->genContentHash();
-        if ($this->pageHasSameContent()){
-            // return empty result
+        if ($this->pageHasSameContent()) {
+            return $this->createSummary();
         }
         $this->applyRegexToParsingResult();
         $this->distributeMatches();
 
-
-        //ссылки валидируем, в первую очередь на предмет внутренних и внешних
-        //затем ссылки сохраняем в бд
-        // !!!результаты, убираем дубликаты
-        //затем результаты сохраняем в бд тоже
-        //формируем объект результатов
-
-        return ['THIS IS DEBUG FIX IT IN RETURN'];
+        return $this->createSummary();
     }
 
-    private function setFields(object $origin, object $page)
+    private function initFields(object $origin, object $page)
     {
         $this->origin = $origin;
         $this->pageUrl = $page->url;
+        $this->matchesSavingResult = null;
+        $this->pagesSavingResult = null;
     }
 
     private function getOriginRegulars()
@@ -83,7 +87,8 @@ class HandlePage implements PageHandler
         }
     }
 
-    protected function genUrlsExpressionHash() {
+    protected function genUrlsExpressionHash()
+    {
         $this->urlsExpressionHash = HashString::hash(Regular::URL_REGEX);
     }
 
@@ -94,7 +99,7 @@ class HandlePage implements PageHandler
             'expression' => Regular::URL_REGEX
         ];
 
-        foreach ($this->originRegulars as $regular){
+        foreach ($this->originRegulars as $regular) {
             $this->uniqueRegulars[$regular->expression_hash] = [
                 'id' => $regular->id,
                 'expression' => $regular->expression,
@@ -107,11 +112,13 @@ class HandlePage implements PageHandler
         $this->parsingResult = $this->parserHandler->parse($this->pageUrl);
     }
 
-    protected function genContentHash() {
+    protected function genContentHash()
+    {
         $this->contentHash = HashString::hash($this->parsingResult['html']);
     }
 
-    protected function pageHasSameContent(): bool {
+    protected function pageHasSameContent(): bool
+    {
         return $this->contentHash == $this->pagePrevContentHash;
     }
 
@@ -121,36 +128,41 @@ class HandlePage implements PageHandler
         $this->regularsApplyingResult = $search->apply($this->uniqueRegulars, $this->parsingResult);
     }
 
-    protected function distributeMatches() {
+    protected function distributeMatches()
+    {
         $this->matchesToAdd = [];
-        foreach ($this->regularsApplyingResult['matches'] as $this->regularHash=>$this->regularMatches) {
-            if($this->isNotOnlyEntityRegular()){
+        $this->matchesSavingResult = [];
+        foreach ($this->regularsApplyingResult['matches'] as $this->regularHash => $this->regularMatches) {
+            if ($this->isNotOnlyEntityRegular()) {
                 $this->takeMatchesValues();
             }
 
-            if($this->isUrlMatches()){
+            if ($this->isUrlMatches()) {
+
                 $this->takePageUrls();
             }
         }
     }
 
-    protected function isNotOnlyEntityRegular(): bool {
+    protected function isNotOnlyEntityRegular(): bool
+    {
         return $this->uniqueRegulars[$this->regularHash]['id'] != 0;
     }
 
-    protected function takeMatchesValues(){
-        foreach ($this->regularMatches as $matchValue){
+    protected function takeMatchesValues()
+    {
+        foreach ($this->regularMatches as $matchValue) {
             if (strlen($matchValue) > Match::MAX_VALUE_LENGTH) continue;
 
             $this->matchesToAdd[] = [
-                'origin_id' => $this->origin,
+                'origin_id' => $this->origin->id,
                 'regular_id' => $this->uniqueRegulars[$this->regularHash]['id'],
                 'value' => $matchValue,
                 'value_hash' => HashString::hash($matchValue),
                 'created_at' => time()
             ];
         }
-        // save matches
+        $this->matchesSavingResult[$this->regularHash] = $this->matchData->addAny($this->matchesToAdd);
     }
 
     protected function isUrlMatches(): bool
@@ -158,22 +170,44 @@ class HandlePage implements PageHandler
         return $this->regularHash == $this->urlsExpressionHash;
     }
 
-    protected function takePageUrls() {
-        foreach ($this->regularMatches as $matchPageUrl){
-            if (parse_url($matchPageUrl, PHP_URL_HOST) != $this->origin->host) continue;
+    protected function takePageUrls()
+    {
+        foreach ($this->regularMatches as $matchPageUrl) {
+            if (!$this->isValidPageUrl($matchPageUrl)) continue;
 
-            $path = parse_url($matchPageUrl, PHP_URL_PATH);
-            $extension = pathinfo($path, PATHINFO_EXTENSION);
-            if (!in_array($extension, Page::ALLOWABLE_URL_PATH_EXTENSIONS)) continue;
-
+            $correctPageUrl = new CorrectPageUrl();
+            $this->pagesToAdd[] = [
+                'origin_id' => $this->origin->id,
+                'url' => $correctPageUrl->correct($matchPageUrl),
+                'url_hash ' => HashString::hash($correctPageUrl->correct($matchPageUrl)),
+                'content_hash' => '',
+                'created_at' => time()
+            ];
         }
+
+        $this->pagesSavingResult[] = $this->pageData->addAny($this->pagesToAdd);
     }
 
-    protected function isValidPageUrl(): bool {
+    protected function isValidPageUrl(string $matchPageUrl): bool
+    {
+        if (strlen($matchPageUrl) > Page::MAX_PAGE_URL_LENGTH) return false;
 
+        if (parse_url($matchPageUrl, PHP_URL_HOST) != $this->origin->host) return false;
+
+        $path = parse_url($matchPageUrl, PHP_URL_PATH);
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        if (!in_array($extension, Page::ALLOWABLE_URL_PATH_EXTENSIONS)) return false;
+
+        return true;
     }
 
-
+    private function createSummary()
+    {
+        return [
+            'matches'=>$this->matchesSavingResult,
+            'pages'=>$this->pagesSavingResult
+        ];
+    }
 }
 
 
