@@ -41,7 +41,8 @@ class HandlePage implements PageHandler
     protected ?array $pagesSavingResult;
 
 
-    public function __construct(ParserHandler $parserHandler, RegularsData $regularsData, MatchData $matchData, PageData $pageData)
+    public function __construct(ParserHandler $parserHandler, RegularsData $regularsData,
+                                MatchData     $matchData, PageData $pageData)
     {
         $this->parserHandler = $parserHandler;
         $this->regularsData = $regularsData;
@@ -201,11 +202,11 @@ class HandlePage implements PageHandler
         return true;
     }
 
-    private function createSummary()
+    private function createSummary(): array
     {
         return [
-            'matches'=>$this->matchesSavingResult,
-            'pages'=>$this->pagesSavingResult
+            'matches' => $this->matchesSavingResult,
+            'pages' => $this->pagesSavingResult
         ];
     }
 }

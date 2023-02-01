@@ -4,20 +4,17 @@ namespace MGGFLOW\DataDealer;
 
 class CorrectPageUrl
 {
-    private string $formattedUrl;
-
     public function correct(string $url): string
     {
-        $this->removeUrlAnchor();
-        return $this->formattedUrl;
+        return $this->removeUrlAnchor($url);
     }
 
-    protected function removeUrlAnchor(): string
+    protected function removeUrlAnchor(string $url): string
     {
-        $formattedUrl = parse_url ($this->url);
-        return $formattedUrl['scheme'].'://'.(isset($formattedUrl['user']) ? $formattedUrl['user'].':'.''
-                .$formattedUrl['pass'].'@' : '').$formattedUrl['host'].(isset($formattedUrl['port']) ? ':'
-                .$formattedUrl['port'] : '').$formattedUrl['path'].(isset($formattedUrl['query']) ? '?'
-                .$formattedUrl['query'] : '');
+        $formattedUrl = parse_url($url);
+        return $formattedUrl['scheme'] . '://' . (isset($formattedUrl['user']) ? $formattedUrl['user'] . ':'
+                . $formattedUrl['pass'] . '@' : '') . $formattedUrl['host'] . (isset($formattedUrl['port']) ? ':'
+                . $formattedUrl['port'] : '') . $formattedUrl['path'] . (isset($formattedUrl['query']) ? '?'
+                . $formattedUrl['query'] : '');
     }
 }

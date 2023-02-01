@@ -25,7 +25,7 @@ class FindFreshMatches
         $this->originId = $originId;
     }
 
-    public function find(int $count)
+    public function find(int $count): ?array
     {
         $this->loadOffset();
         $this->verifyOffset();

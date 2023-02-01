@@ -21,7 +21,7 @@ class DealWithOrigin
     protected array $pageHandlingResult;
     protected ?int $statSupplementationResult;
 
-    public function __construct(OriginData $originData, PageData $pageData,
+    public function __construct(OriginData  $originData, PageData $pageData,
                                 PageHandler $pageHandler, StatData $statData)
     {
         $this->originData = $originData;
@@ -62,8 +62,7 @@ class DealWithOrigin
 
     protected function checkPageExistence()
     {
-        if(empty($this->page))
-        {
+        if (empty($this->page)) {
             throw new PageNotFound();
         }
     }

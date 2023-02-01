@@ -21,10 +21,9 @@ class ApplyRegularsToPage
         $this->stats = [];
         $this->matches = [];
 
-        foreach ($this->uniqueRegulars as $this->regularHash=>$this->regularBasic)
-        {
+        foreach ($this->uniqueRegulars as $this->regularHash => $this->regularBasic) {
             $this->initStat();
-            if ($this->parsingResult['response_code']!=200){
+            if ($this->parsingResult['response_code'] != 200) {
                 $this->addDealingFail();
             }
 
@@ -38,7 +37,8 @@ class ApplyRegularsToPage
         return $this->getResult();
     }
 
-    protected function initStat() {
+    protected function initStat()
+    {
         $this->stats[$this->regularBasic['id']] = [
             'matches_found' => 0,
             'dealing_times' => 1,
@@ -47,11 +47,13 @@ class ApplyRegularsToPage
     }
 
 
-    protected function addDealingFail() {
+    protected function addDealingFail()
+    {
         $this->stats[$this->regularBasic['id']]['dealing_fails'] += 1;
     }
 
-    protected function setMatchesCount() {
+    protected function setMatchesCount()
+    {
         $this->stats[$this->regularBasic['id']]['found'] = count($this->matches[$this->regularHash]);
     }
 
