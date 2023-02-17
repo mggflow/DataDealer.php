@@ -11,18 +11,21 @@ class FindFreshMatches
     private MatchData $matchData;
     private int $ownerId;
     private int $originId;
+    protected int $regularId;
 
     private int $matchOffsetId;
     private int $lastMatchOffsetId;
     private ?array $matches;
     private ?object $matchesOffset;
 
-    public function __construct(MatchesOffsetData $matchesOffsetData, MatchData $matchData, int $ownerId, int $originId)
+    public function __construct(MatchesOffsetData $matchesOffsetData, MatchData $matchData,
+                                int $ownerId, int $originId, int $regularId)
     {
         $this->matchesOffsetData = $matchesOffsetData;
         $this->matchData = $matchData;
         $this->ownerId = $ownerId;
         $this->originId = $originId;
+        $this->regularId = $regularId;
     }
 
     public function find(int $count): ?array
@@ -39,7 +42,7 @@ class FindFreshMatches
 
     private function loadOffset()
     {
-        $this->matchesOffset = $this->matchesOffsetData->get($this->ownerId, $this->originId);
+        $this->matchesOffset = $this->matchesOffsetData->get($this->ownerId, $this->originId, $this->regularId);
     }
 
     private function verifyOffset()
@@ -67,7 +70,7 @@ class FindFreshMatches
     {
         if ($this->matchOffsetId == $this->lastMatchOffsetId) return;
         if ($this->matchOffsetId == 0 and $this->lastMatchOffsetId > 0)
-            $this->matchesOffsetData->create($this->ownerId, $this->originId, $this->lastMatchOffsetId);
+            $this->matchesOffsetData->create($this->ownerId, $this->originId, $this->regularId, $this->lastMatchOffsetId);
         if ($this->matchOffsetId != 0)
             $this->matchesOffsetData->update($this->matchesOffset->id, $this->lastMatchOffsetId);
     }
