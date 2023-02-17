@@ -20,6 +20,7 @@ class HandlePage implements PageHandler
     private PageData $pageData;
 
     private object $origin;
+    protected int $pageId;
     private string $pageUrl;
     protected string $pagePrevContentHash;
 
@@ -62,6 +63,7 @@ class HandlePage implements PageHandler
         if ($this->pageHasSameContent()) {
             return $this->createSummary();
         }
+        $this->refreshPageContentHash();
         $this->applyRegexToParsingResult();
         $this->distributeMatches();
 
@@ -71,7 +73,9 @@ class HandlePage implements PageHandler
     private function initFields(object $origin, object $page)
     {
         $this->origin = $origin;
+        $this->pageId = $page->id;
         $this->pageUrl = $page->url;
+        $this->pagePrevContentHash = $page->content_hash;
         $this->matchesSavingResult = null;
         $this->pagesSavingResult = null;
     }
@@ -123,6 +127,11 @@ class HandlePage implements PageHandler
         return $this->contentHash == $this->pagePrevContentHash;
     }
 
+    protected function refreshPageContentHash()
+    {
+        $this->pageData->updateContentHash($this->pageId, $this->contentHash);
+    }
+
     private function applyRegexToParsingResult()
     {
         $search = new ApplyRegularsToPage();
@@ -131,6 +140,7 @@ class HandlePage implements PageHandler
 
     protected function distributeMatches()
     {
+        $this->pagesToAdd = [];
         $this->matchesToAdd = [];
         $this->matchesSavingResult = [];
         foreach ($this->regularsApplyingResult['matches'] as $this->regularHash => $this->regularMatches) {
@@ -180,11 +190,12 @@ class HandlePage implements PageHandler
             $this->pagesToAdd[] = [
                 'origin_id' => $this->origin->id,
                 'url' => $correctPageUrl->correct($matchPageUrl),
-                'url_hash ' => HashString::hash($correctPageUrl->correct($matchPageUrl)),
+                'url_hash' => HashString::hash($correctPageUrl->correct($matchPageUrl)),
                 'content_hash' => '',
                 'created_at' => time()
             ];
         }
+        if (empty($this->pagesToAdd)) return;
 
         $this->pagesSavingResult[] = $this->pageData->addAny($this->pagesToAdd);
     }
