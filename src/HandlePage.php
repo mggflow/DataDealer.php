@@ -105,6 +105,7 @@ class HandlePage implements PageHandler
         ];
 
         foreach ($this->originRegulars as $regular) {
+            if (is_array($regular)) $regular = (object)$regular;
             $this->uniqueRegulars[$regular->expression_hash] = [
                 'id' => $regular->id,
                 'expression' => $regular->expression,
