@@ -49,8 +49,11 @@ class FindFreshMatches
     {
         if (empty($this->matchesOffset)) {
             $this->matchOffsetId = 0;
-            $this->lastMatchOffsetId = 0;
+        }else{
+            $this->matchOffsetId = $this->matchesOffset->offset_match_id;
         }
+
+        $this->lastMatchOffsetId = 0;
     }
 
     private function findMatches($count)
@@ -61,6 +64,7 @@ class FindFreshMatches
     private function getLastMatches()
     {
         foreach ($this->matches as $match) {
+            if (is_array($match)) $match = (object)$match;
             if ($match->id > $this->lastMatchOffsetId)
                 $this->lastMatchOffsetId = $match->id;
         }
@@ -69,8 +73,10 @@ class FindFreshMatches
     private function saveLastMatchesOffset()
     {
         if ($this->matchOffsetId == $this->lastMatchOffsetId) return;
+
         if ($this->matchOffsetId == 0 and $this->lastMatchOffsetId > 0)
             $this->matchesOffsetData->create($this->ownerId, $this->originId, $this->regularId, $this->lastMatchOffsetId);
+
         if ($this->matchOffsetId != 0)
             $this->matchesOffsetData->update($this->matchesOffset->id, $this->lastMatchOffsetId);
     }
