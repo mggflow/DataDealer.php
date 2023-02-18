@@ -150,7 +150,6 @@ class HandlePage implements PageHandler
             }
 
             if ($this->isUrlMatches()) {
-
                 $this->takePageUrls();
             }
         }
@@ -184,14 +183,15 @@ class HandlePage implements PageHandler
 
     protected function takePageUrls()
     {
+        $correctPageUrl = new CorrectPageUrl();
         foreach ($this->regularMatches as $matchPageUrl) {
             if (!$this->isValidPageUrl($matchPageUrl)) continue;
 
-            $correctPageUrl = new CorrectPageUrl();
+            $correctedUrl = $correctPageUrl->correct($matchPageUrl);
             $this->pagesToAdd[] = [
                 'origin_id' => $this->origin->id,
-                'url' => $correctPageUrl->correct($matchPageUrl),
-                'url_hash' => HashString::hash($correctPageUrl->correct($matchPageUrl)),
+                'url' => $correctedUrl,
+                'url_hash' => HashString::hash($correctedUrl),
                 'content_hash' => '',
                 'created_at' => time()
             ];
@@ -205,11 +205,7 @@ class HandlePage implements PageHandler
     {
         if (strlen($matchPageUrl) > Page::MAX_PAGE_URL_LENGTH) return false;
 
-        if (parse_url($matchPageUrl, PHP_URL_HOST) != $this->origin->host) return false;
-
-        $path = parse_url($matchPageUrl, PHP_URL_PATH);
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        if (!in_array($extension, Page::ALLOWABLE_URL_PATH_EXTENSIONS)) return false;
+        if (mb_strtolower(parse_url($matchPageUrl, PHP_URL_HOST)) != $this->origin->host) return false;
 
         return true;
     }

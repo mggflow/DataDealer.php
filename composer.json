@@ -22,6 +22,6 @@
         }
     ],
     "require": {
-
+      "ext-mbstring": "*"
     }
 }
