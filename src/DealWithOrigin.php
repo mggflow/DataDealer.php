@@ -69,7 +69,11 @@ class DealWithOrigin
 
     protected function handlePage()
     {
-        $this->pageHandlingResult = $this->pageHandler->handle($this->origin, $this->page);
+        try{
+            $this->pageHandlingResult = $this->pageHandler->handle($this->origin, $this->page);
+        }catch (\Exception $e){
+            $this->pageHandlingResult = [];
+        }
     }
 
     protected function supplementStats()

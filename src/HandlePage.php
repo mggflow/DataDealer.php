@@ -5,6 +5,7 @@ namespace MGGFLOW\DataDealer;
 use MGGFLOW\DataDealer\Entities\Match;
 use MGGFLOW\DataDealer\Entities\Page;
 use MGGFLOW\DataDealer\Entities\Regular;
+use MGGFLOW\DataDealer\Exceptions\ParsingFailed;
 use MGGFLOW\DataDealer\Exceptions\RegularsNotFound;
 use MGGFLOW\DataDealer\Interfaces\MatchData;
 use MGGFLOW\DataDealer\Interfaces\PageData;
@@ -59,6 +60,7 @@ class HandlePage implements PageHandler
         $this->genUrlsExpressionHash();
         $this->makeRegularsUnique();
         $this->parse();
+        $this->checkParsingResult();
         $this->genContentHash();
         if ($this->pageHasSameContent()) {
             return $this->createSummary();
@@ -116,6 +118,10 @@ class HandlePage implements PageHandler
     private function parse()
     {
         $this->parsingResult = $this->parserHandler->parse($this->pageUrl);
+    }
+
+    protected function checkParsingResult(){
+        if (!isset($this->parsingResult['html'])) throw new ParsingFailed();
     }
 
     protected function genContentHash()
