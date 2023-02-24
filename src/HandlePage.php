@@ -227,7 +227,7 @@ class HandlePage implements PageHandler
     {
         if (strlen($matchPageUrl) > Page::MAX_PAGE_URL_LENGTH) return false;
 
-        if (mb_strtolower(parse_url($matchPageUrl, PHP_URL_HOST)) != $this->origin->host) return false;
+        if (mb_strtolower((parse_url($matchPageUrl, PHP_URL_HOST) ?? '')) != $this->origin->host) return false;
 
         return true;
     }

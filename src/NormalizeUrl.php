@@ -29,7 +29,7 @@ class NormalizeUrl
                 . '/' . ltrim($normalized, '/');
         } else {
             $normalized = $this->getScheme($this->parentUrl)
-                . '://' . $this->getHost($this->parentUrl)
+                . '://' . rtrim($this->getHost($this->parentUrl), '/')
                 . '/' . ltrim($normalized, '/');
         }
 
@@ -54,7 +54,7 @@ class NormalizeUrl
 
     private function getScheme(string $url)
     {
-        return (parse_url($url, PHP_URL_SCHEME) ?? 'http');
+        return (parse_url($url, PHP_URL_SCHEME) ?? '');
     }
 
     private function getHost($url)
