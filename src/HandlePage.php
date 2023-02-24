@@ -37,6 +37,7 @@ class HandlePage implements PageHandler
     protected array $regularMatches;
 
     protected array $matchesToAdd;
+    protected array $pagesUrlCandidates;
     protected array $pagesToAdd;
 
     protected ?array $matchesSavingResult;
@@ -68,6 +69,8 @@ class HandlePage implements PageHandler
         $this->refreshPageContentHash();
         $this->applyRegexToParsingResult();
         $this->distributeMatches();
+        $this->parsePagesDirectly();
+        $this->addPageNotes();
 
         return $this->createSummary();
     }
@@ -120,7 +123,8 @@ class HandlePage implements PageHandler
         $this->parsingResult = $this->parserHandler->parse($this->pageUrl);
     }
 
-    protected function checkParsingResult(){
+    protected function checkParsingResult()
+    {
         if (!isset($this->parsingResult['html'])) throw new ParsingFailed();
     }
 
@@ -156,9 +160,16 @@ class HandlePage implements PageHandler
             }
 
             if ($this->isUrlMatches()) {
-                $this->takePageUrls();
+                $this->addPagesUrlCandidates($this->regularMatches);
             }
         }
+    }
+
+    protected function parsePagesDirectly()
+    {
+        $parser = new ParseHtmlPages($this->parsingResult['html'], $this->pageUrl);
+        $candidates = $parser->parse();
+        $this->addPagesUrlCandidates($candidates);
     }
 
     protected function isNotOnlyEntityRegular(): bool
@@ -187,20 +198,25 @@ class HandlePage implements PageHandler
         return $this->regularHash == $this->urlsExpressionHash;
     }
 
-    protected function takePageUrls()
+    protected function addPagesUrlCandidates(array &$urls)
+    {
+        foreach ($urls as $url) {
+            $this->pagesUrlCandidates[] = $url;
+        }
+    }
+
+    protected function addPageNotes()
     {
         $correctPageUrl = new CorrectPageUrl();
-        foreach ($this->regularMatches as $matchPageUrl) {
-            if (!$this->isValidPageUrl($matchPageUrl)) continue;
 
-            $correctedUrl = $correctPageUrl->correct($matchPageUrl);
-            $this->pagesToAdd[] = [
-                'origin_id' => $this->origin->id,
-                'url' => $correctedUrl,
-                'url_hash' => HashString::hash($correctedUrl),
-                'content_hash' => '',
-                'created_at' => time()
-            ];
+        foreach ($this->pagesUrlCandidates as &$pageUrlCandidate) {
+            $pageUrlCandidate = $correctPageUrl->correct($pageUrlCandidate);
+        }
+
+        $this->pagesUrlCandidates = array_unique($this->pagesUrlCandidates);
+
+        foreach ($this->pagesUrlCandidates as $pageUrl) {
+            $this->preparePageNote($pageUrl);
         }
         if (empty($this->pagesToAdd)) return;
 
@@ -214,6 +230,19 @@ class HandlePage implements PageHandler
         if (mb_strtolower(parse_url($matchPageUrl, PHP_URL_HOST)) != $this->origin->host) return false;
 
         return true;
+    }
+
+    protected function preparePageNote(string $correctedUrl)
+    {
+        if (!$this->isValidPageUrl($correctedUrl)) return;
+
+        $this->pagesToAdd[] = [
+            'origin_id' => $this->origin->id,
+            'url' => $correctedUrl,
+            'url_hash' => HashString::hash($correctedUrl),
+            'content_hash' => '',
+            'created_at' => time()
+        ];
     }
 
     private function createSummary(): array
