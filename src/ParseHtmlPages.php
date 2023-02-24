@@ -30,6 +30,7 @@ class ParseHtmlPages
     public function parse(): array
     {
         $this->pages = [];
+        if (empty($this->dom)) return $this->pages;
         foreach ($this->dom->find('a') as $element)
             $this->handleUrl($element->href);
 
