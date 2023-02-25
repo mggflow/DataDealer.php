@@ -14,7 +14,7 @@ class CorrectPageUrl
         $formattedUrl = parse_url($url);
         return ($formattedUrl['scheme'] ?? 'http') . '://'
             . (isset($formattedUrl['user']) ? $formattedUrl['user'] . ':' . $formattedUrl['pass'] . '@' : '')
-            . $formattedUrl['host']
+            . ($formattedUrl['host'] ?? '')
             . (isset($formattedUrl['port']) ? ':' . $formattedUrl['port'] : '')
             . ($formattedUrl['path'] ?? '')
             . (isset($formattedUrl['query']) ? '?' . $formattedUrl['query'] : '');
