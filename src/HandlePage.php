@@ -5,13 +5,12 @@ namespace MGGFLOW\DataDealer;
 use MGGFLOW\DataDealer\Entities\Match;
 use MGGFLOW\DataDealer\Entities\Page;
 use MGGFLOW\DataDealer\Entities\Regular;
-use MGGFLOW\DataDealer\Exceptions\ParsingFailed;
-use MGGFLOW\DataDealer\Exceptions\RegularsNotFound;
 use MGGFLOW\DataDealer\Interfaces\MatchData;
 use MGGFLOW\DataDealer\Interfaces\PageData;
 use MGGFLOW\DataDealer\Interfaces\PageHandler;
 use MGGFLOW\DataDealer\Interfaces\ParserHandler;
 use MGGFLOW\DataDealer\Interfaces\RegularsData;
+use MGGFLOW\ExceptionManager\ManageException;
 
 class HandlePage implements PageHandler
 {
@@ -93,7 +92,11 @@ class HandlePage implements PageHandler
     private function checkRegularsExistence()
     {
         if (empty($this->originRegulars)) {
-            throw new RegularsNotFound();
+            throw ManageException::build()
+                ->log()->info()->b()
+                ->desc()->not('Regulars')->found()
+                ->context($this->origin->id, 'originId')->b()
+                ->fill();
         }
     }
 
@@ -125,7 +128,12 @@ class HandlePage implements PageHandler
 
     protected function checkParsingResult()
     {
-        if (!isset($this->parsingResult['html'])) throw new ParsingFailed();
+        if (!isset($this->parsingResult['html'])) throw ManageException::build()
+            ->log()->info()->b()
+            ->desc()->isInvalid('Parsing Result')
+            ->context($this->origin->id, 'originId')
+            ->context($this->pageUrl, 'pageUrl')->b()
+            ->fill();
     }
 
     protected function genContentHash()

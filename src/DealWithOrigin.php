@@ -2,12 +2,11 @@
 
 namespace MGGFLOW\DataDealer;
 
-use MGGFLOW\DataDealer\Exceptions\OriginNotFound;
-use MGGFLOW\DataDealer\Exceptions\PageNotFound;
 use MGGFLOW\DataDealer\Interfaces\OriginData;
 use MGGFLOW\DataDealer\Interfaces\PageData;
 use MGGFLOW\DataDealer\Interfaces\PageHandler;
 use MGGFLOW\DataDealer\Interfaces\StatData;
+use MGGFLOW\ExceptionManager\ManageException;
 
 class DealWithOrigin
 {
@@ -51,7 +50,10 @@ class DealWithOrigin
     protected function checkOriginExistence()
     {
         if (empty($this->origin)) {
-            throw new OriginNotFound();
+            throw ManageException::build()
+                ->log()->info()->b()
+                ->desc()->not('Origin')->found()->b()
+                ->fill();
         }
     }
 
@@ -63,7 +65,11 @@ class DealWithOrigin
     protected function checkPageExistence()
     {
         if (empty($this->page)) {
-            throw new PageNotFound();
+            throw ManageException::build()
+                ->log()->info()->b()
+                ->desc()->not('Page')->found()
+                ->context($this->origin->id, 'originId')->b()
+                ->fill();
         }
     }
 
