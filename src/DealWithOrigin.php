@@ -6,6 +6,7 @@ use MGGFLOW\DataDealer\Interfaces\OriginData;
 use MGGFLOW\DataDealer\Interfaces\PageData;
 use MGGFLOW\DataDealer\Interfaces\PageHandler;
 use MGGFLOW\DataDealer\Interfaces\StatData;
+use MGGFLOW\ExceptionManager\Interfaces\UniException;
 use MGGFLOW\ExceptionManager\ManageException;
 
 class DealWithOrigin
@@ -19,6 +20,7 @@ class DealWithOrigin
     protected ?object $page;
     protected array $pageHandlingResult;
     protected ?int $statSupplementationResult;
+    protected ?UniException $handlingException = null;
 
     public function __construct(OriginData  $originData, PageData $pageData,
                                 PageHandler $pageHandler, StatData $statData)
@@ -77,7 +79,8 @@ class DealWithOrigin
     {
         try{
             $this->pageHandlingResult = $this->pageHandler->handle($this->origin, $this->page);
-        }catch (\Exception $e){
+        }catch (UniException $e){
+            $this->handlingException = $e;
             $this->pageHandlingResult = [];
         }
     }
@@ -93,7 +96,8 @@ class DealWithOrigin
             'origin' => $this->origin,
             'page' => $this->page,
             'pageHandlingResult' => $this->pageHandlingResult,
-            'statSupplementationResult' => $this->statSupplementationResult
+            'statSupplementationResult' => $this->statSupplementationResult,
+            'handlingException' => $this->handlingException
         ];
     }
 }
