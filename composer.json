@@ -24,6 +24,6 @@
     "require": {
       "ext-mbstring": "*",
         "kub-at/php-simple-html-dom-parser": "^1.9",
-        "mggflow/exception-manager": "^2.0"
+        "mggflow/exception-manager": "^3.3"
     }
 }
