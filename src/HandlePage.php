@@ -193,6 +193,7 @@ class HandlePage implements PageHandler
             $this->matchesToAdd[] = [
                 'origin_id' => $this->origin->id,
                 'regular_id' => $this->uniqueRegulars[$this->regularHash]['id'],
+                'page_id' => $this->pageId,
                 'value' => $matchValue,
                 'value_hash' => HashString::hash($matchValue),
                 'created_at' => time()
